@@ -1,0 +1,62 @@
+# Paste at the bottom of your project's .qsf (or Assignments > Import Assignments)
+# Pins are from memory, verify against the DE10-Lite user manual.
+
+# clock, keys, switches, LEDs
+set_location_assignment PIN_P11 -to MAX10_CLK1_50
+set_location_assignment PIN_B8  -to KEY[0]
+set_location_assignment PIN_A7  -to KEY[1]
+
+set_location_assignment PIN_C10 -to SW[0]
+set_location_assignment PIN_C11 -to SW[1]
+set_location_assignment PIN_D12 -to SW[2]
+set_location_assignment PIN_C12 -to SW[3]
+set_location_assignment PIN_A12 -to SW[4]
+set_location_assignment PIN_B12 -to SW[5]
+set_location_assignment PIN_A13 -to SW[6]
+set_location_assignment PIN_A14 -to SW[7]
+set_location_assignment PIN_B14 -to SW[8]
+set_location_assignment PIN_F15 -to SW[9]
+
+set_location_assignment PIN_A8  -to LEDR[0]
+set_location_assignment PIN_A9  -to LEDR[1]
+set_location_assignment PIN_A10 -to LEDR[2]
+set_location_assignment PIN_B10 -to LEDR[3]
+set_location_assignment PIN_D13 -to LEDR[4]
+set_location_assignment PIN_C13 -to LEDR[5]
+set_location_assignment PIN_E14 -to LEDR[6]
+set_location_assignment PIN_D14 -to LEDR[7]
+set_location_assignment PIN_A11 -to LEDR[8]
+set_location_assignment PIN_B11 -to LEDR[9]
+
+# GPIO header (code GPIO[n] = Terasic GPIO[n])
+set_location_assignment PIN_V10  -to GPIO[0]
+set_location_assignment PIN_W10  -to GPIO[1]
+set_location_assignment PIN_V9   -to GPIO[2]
+set_location_assignment PIN_W9   -to GPIO[3]
+set_location_assignment PIN_V8   -to GPIO[4]
+set_location_assignment PIN_W8   -to GPIO[5]
+set_location_assignment PIN_V7   -to GPIO[6]
+set_location_assignment PIN_W7   -to GPIO[7]
+set_location_assignment PIN_W6   -to GPIO[8]
+set_location_assignment PIN_V5   -to GPIO[9]
+set_location_assignment PIN_W5   -to GPIO[10]
+set_location_assignment PIN_AA15 -to GPIO[11]
+set_location_assignment PIN_AA14 -to GPIO[12]
+set_location_assignment PIN_W13  -to GPIO[13]
+set_location_assignment PIN_W12  -to GPIO[14]
+set_location_assignment PIN_AB13 -to GPIO[15]
+set_location_assignment PIN_AB12 -to GPIO[16]
+set_location_assignment PIN_Y11  -to GPIO[17]
+set_location_assignment PIN_AB11 -to GPIO[18]
+set_location_assignment PIN_W11  -to GPIO[19]
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to MAX10_CLK1_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[*]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW[*]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDR[*]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[*]
+
+# buttons (GPIO16, GPIO17) and UART RX (GPIO18) idle high via internal pull-up
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to GPIO[16]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to GPIO[17]
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to GPIO[18]
