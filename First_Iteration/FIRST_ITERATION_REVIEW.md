@@ -1,98 +1,92 @@
-# First Iteration — Mistakes and Lessons Learned
+# First Iteration — What I Would Do Differently
 
-This document records the problems encountered during the first iteration of **Adaptive Traffic Control During Emergencies Using FPGA**. It is a development log, not a claim that every part of the system failed. The original source files in this folder are preserved as the first-iteration baseline.
+This document captures the improvements I would make if I were starting **Adaptive Traffic Control During Emergencies Using FPGA** again. The aim is to make the development process more systematic and reduce debugging time in the next iteration.
 
-## 1. Development and testing issues
+## 1. Bring up the hardware in stages
 
-These were mainly issues in the order of implementation, setup, and debugging.
+If I were starting again, I would not connect and test the entire setup at once. I would verify each part before integrating the next:
 
-### 1.1 Built and tested too many parts at once
-
-The initial setup combined 16 traffic and pedestrian LEDs, two pedestrian buttons, the ESP32, and the MFRC522 RFID reader before each part had been independently verified.
-
-When the LEDs behaved unexpectedly, several possible causes had to be considered at once.
-
-**Lesson:** Bring the system up incrementally:
-1. Test one GPIO-header LED.
-2. Test all required LEDs.
+1. Test a single GPIO-header LED.
+2. Test all traffic and pedestrian LEDs.
 3. Verify the traffic-light FSM independently.
 4. Test UART communication using the FPGA's onboard LEDs.
-5. Connect and test RFID tag detection.
-6. Integrate the pedestrian controls and test the complete system.
+5. Connect the ESP32 and verify RFID tag detection.
+6. Add the pedestrian buttons and test the complete system.
 
-### 1.2 Switch state was not checked early enough
+This would make it easier to identify which block is causing a problem.
 
-SW9, used for fault injection, was left ON after an earlier switch-to-LED test. The fault monitor latched the fault, which made the traffic LEDs appear unresponsive.
+## 2. Check switch positions and reset conditions first
 
-**Lesson:** Before debugging a design, check the switch positions. For normal operation, keep SW9 OFF. After disabling fault injection, use KEY0 to clear the latched fault and recover.
+Before debugging unexpected LED or FSM behaviour, I would check every switch position and confirm the reset state.
 
-### 1.3 Quartus Programmer chain was misconfigured
+For normal operation, I would keep SW9 (fault injection) OFF. If a fault has been latched, I would turn SW9 OFF and use KEY0 to clear the fault before continuing.
 
-The Programmer setup contained the same `.sof` file twice and displayed two device rows. This caused programming to fail.
+## 3. Check the Quartus Programmer chain before programming
 
-**Lesson:** Check the detected device chain and ensure the programming file is listed only once for the intended FPGA device before selecting Start.
+Before selecting Start, I would verify that the DE10-Lite is detected correctly, that the intended FPGA device is selected, and that the .sof file is listed only once.
 
-### 1.4 USB-Blaster driver installation required a different method
+If the Programmer displays duplicate device rows or duplicate programming files, I would correct the chain before attempting to program the board.
 
-The normal “Browse my computer” driver installation route did not work. The driver was installed successfully using the “Have Disk” option.
+## 4. Keep the working driver-installation method documented
 
-**Lesson:** Record the working driver-installation method for future setup or troubleshooting. This was a tool-setup issue rather than a design-logic error.
+For a fresh setup, I would keep the USB-Blaster driver installation steps that worked: using Device Manager's **Have Disk** option when the normal browse route does not detect the driver.
 
-### 1.5 The cause of the first switch-test issue was not confirmed
+This would make the setup easier to reproduce on another computer.
 
-The first switch-to-LED test began working after several possible causes were considered, including recompiling the design, checking the top-level entity name, and checking pin assignments. The exact change that fixed it was not established.
+## 5. Record the exact cause of every issue
 
-A missed recompile or a top-level entity-name mismatch were possibilities, but the actual cause is unknown.
+Whenever a test starts working after debugging, I would note the exact change that fixed it.
 
-**Lesson:** When a fix works, record exactly what was changed and retest it. Avoid treating an unconfirmed explanation as the root cause.
+For example, I would record whether the fix was a recompile, a corrected top-level entity name, a pin assignment change, or a switch/reset change. If the cause is uncertain, I would label it as unconfirmed rather than guessing.
 
-## 2. Design and guidance issues
+## 6. Verify emergency-request timing in simulation first
 
-These were issues in the implementation or guidance, rather than mistakes made during the hardware setup.
+Before testing emergency preemption on the physical board, I would create a testbench with shortened timing parameters.
 
-### 2.1 Emergency-vehicle request hold-timer bug
+I would specifically test that:
+- An emergency request is received and stored.
+- The current traffic phase completes safely.
+- The controller transitions through yellow and all-red.
+- The requested direction receives green.
+- The emergency hold timer counts only while that direction has green.
+- The controller returns to normal operation after the hold period.
 
-In the initial Verilog logic, the emergency-vehicle request could expire before the controller reached the emergency green phase. The request-hold timer was counting at the wrong stage of the sequence.
+This would help catch timing and state-transition bugs before hardware testing.
 
-**Correction:** The timer was changed so that it counts only while the emergency direction has green. This fix still needs to be verified on the physical FPGA after recompiling and reflashing the updated Verilog.
+## 7. Verify every GPIO assignment against the board documentation
 
-### 2.2 GPIO pin assignments were not fully verified
+Before connecting the full breadboard, I would cross-check every GPIO-header pin in the QSF file against the official Terasic DE10-Lite documentation.
 
-Some pin assignments in the QSF file were entered from memory. The onboard switches and LEDs were tested successfully, but the GPIO-header pin assignments have not all been independently checked against the official DE10-Lite pin information.
+I would maintain a separate pin-mapping table showing the FPGA pin, GPIO header pin, connected component, and verification status. I would not treat a pin assignment as confirmed until it had been checked.
 
-**Lesson:** Verify every external GPIO pin against the board documentation before treating the pin map as final.
+## 8. Validate the system feature by feature
 
-### 2.3 A simulation testbench was not prepared early
+After the individual blocks pass their tests, I would verify the integrated system in a fixed order:
 
-A testbench should have been prepared and run before integrating the complete hardware setup. A simulation with shortened timing parameters could have exposed the emergency-request hold-timer bug earlier.
+1. Normal North-South and East-West traffic sequence.
+2. Emergency preemption using the FPGA switches.
+3. RFID-triggered emergency requests.
+4. Pedestrian walk requests and clearance.
+5. Emergency request during a pedestrian phase.
+6. Fault injection using SW9 and recovery using KEY0.
 
-**Lesson:** Add a testbench in the next iteration to verify normal traffic sequencing, emergency preemption, pedestrian requests, and fault handling before hardware testing.
+I would record the expected and observed LED behaviour for each test.
 
-## 3. What worked in the first iteration
+## 9. Keep the iterations separate
 
-The first iteration also established several working parts:
+I would preserve the original first-iteration files as a baseline and place all corrected or expanded implementations in Second_Iteration/.
 
-- Quartus detected the DE10-Lite after the USB-Blaster driver was installed.
-- The FPGA project was created, compiled, and programmed for the basic switch-to-LED test.
-- The ESP32 successfully read RFID tags.
-- The ESP32 serial monitor displayed the East tag identifier (`E`).
-- The traffic-light sequence ran after the latched fault was cleared.
-- The breadboard wiring and ESP32-side RFID detection worked during the reported tests.
+I would also keep a short change log describing what changed, why it changed, and whether the update was verified in simulation, on the physical FPGA, or both.
 
-These observations do not, by themselves, confirm that the updated emergency-preemption logic has passed a complete physical-board test.
+## 10. Current verification priorities
 
-## 4. Lessons to carry into the second iteration
+For the existing first iteration, the next steps are:
 
-1. Test each hardware and software block independently before integration.
-2. Check switch states and reset conditions before debugging apparent LED or FSM failures.
-3. Record the exact cause of every issue once it has been identified.
-4. Simulate the FSM and emergency-preemption timing before programming the FPGA.
-5. Verify GPIO assignments against the official board documentation.
-6. Recompile and reflash after every HDL change, then verify the result on the physical board.
-7. Keep the original first-iteration files unchanged and place corrected implementations in `Second_Iteration/`.
+- Recompile and reflash the updated Verilog containing the emergency hold-timer correction.
+- Test emergency preemption using the FPGA switches.
+- Test RFID-triggered requests.
+- Test pedestrian requests and fault recovery.
+- Verify the GPIO-header pin assignments against the DE10-Lite documentation.
+- Add a testbench and capture waveforms for normal operation, emergency preemption, and fault handling.
 
-## 5. Current verification status
-
-The emergency hold-timer correction has been made in the updated Verilog, but it still needs to be recompiled, reflashed, and tested on the physical board. The GPIO-header pin assignments also remain to be checked against the DE10-Lite documentation.
-
-The first iteration should therefore be treated as a preserved baseline with documented issues, not as a fully validated final implementation.
+The goal for the next iteration is a more methodical development process, with each feature tested independently before full-system integration.
